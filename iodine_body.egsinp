@@ -1,0 +1,181 @@
+
+:start geometry definition:
+
+    :start geometry:
+        name        = iodine_seed
+        library     = egs_spheres
+	midpoint = 0 0 0 
+	radii = 0.1     
+	
+        :start media input:
+            media = iodine
+        :stop media input:
+
+    :stop geometry:
+
+    #a sphere as an approximation for body
+    :start geometry:
+        name        = body_sphere
+        library     = egs_spheres
+	midpoint = 0 0 0 
+	radii = 20   
+	
+        :start media input:
+            media = water
+        :stop media input:
+    :stop geometry:
+    
+    #a sphere to approximate the head
+    :start geometry:
+        name        = head_sphere
+        library     = egs_spheres
+	midpoint = 0 0 17 
+	radii = 10     
+        :start media input:
+            media = water
+        :stop media input:
+    :stop geometry:
+
+    :start geometry:
+        name        = head_and_body
+        library     = egs_gunion
+	geometries = body_sphere head_sphere 
+    
+    :stop geometry:
+
+    :start geometry:
+        name        = source_in_person
+        library     = egs_gunion
+	geometries = iodine_seed head_and_body 
+    :stop geometry:
+
+    ### air cavity, spherical, 5 cm radius.  
+    :start geometry:
+        name     = cavity
+        library  = egs_spheres
+        midpoint = 0 100 0
+        radii    = 5.0
+        :start media input:
+            media = air
+        :stop media input:
+    :stop geometry:
+
+    ### 2.5 meter cube air box
+    :start geometry:
+        name     = room
+        library  = egs_box
+        box size = 250
+        :start media input:
+            media = air
+        :stop media input:
+    :stop geometry:
+
+    ### Put everything in the room
+    :start geometry:
+        name    = cavity_in_room_no_wall
+        library = egs_genvelope
+        base geometry = room
+        inscribed geometries = source_in_person cavity
+    :stop geometry:
+
+    ### simulation geometry
+    simulation geometry = cavity_in_room_no_wall
+
+:stop geometry definition:
+
+
+###############################################################################
+### Media
+###############################################################################
+:start media definition:
+
+    ### energy cutoffs
+    ae = 0.512
+    ue = 2
+    ap = 0.001
+    up = 1.5
+
+    ### air
+    :start air:
+        density correction file = air_dry_nearsealevel
+    :stop air:
+    
+    :start water:
+	density correction file = water_liquid
+    :stop water:
+
+    :start iodine:
+	density correction file = iodine
+    :stop iodine:
+:stop media definition:
+
+:start source definition:
+
+    :start source:
+	name = I125_photons
+	library = egs_isotropic_source
+	charge = 0   
+	geometry = cavity_in_room_no_wall
+	region selection    = IncludeSelected
+	selected regions    = 1
+	:start shape:
+	    type     = box  
+            box size    = 0.3 0.3 0.3 
+
+	:stop shape:
+
+	:start spectrum:
+	    type   = monoenergetic
+	    energy = 0.027
+	:stop spectrum:
+
+    :stop source:
+
+    simulation source = I125_photons
+
+:stop source definition:
+
+
+
+###############################################################################
+### Scoring options
+###############################################################################
+:start scoring options:
+
+    ### use the same geometry under two different names, for easier bookeeping
+    :start calculation geometry:
+        geometry name    = cavity_in_room_no_wall
+        cavity regions   = 5 
+        cavity mass      = 0.630831804841 # ball of air
+    :stop calculation geometry:
+
+    ### E*muen file (could also be E*mutr): absolute or relative file path
+    emuen file = emuen_icru90_1.5MeV.data
+
+    ### geometry for forced-detection (if omitted, an analog scoring is used)
+    cavity geometry = cavity
+
+:stop scoring options:
+
+
+
+###############################################################################
+### Transport parameters
+###############################################################################
+:start MC transport parameter:
+
+    ### you can include here any of the EGSnrc transport parameters
+
+    Global ECUT = 2                 # Turn-off electron transport
+    Global PCUT = 0.01
+    Photon cross sections = mcdf-xcom   # XCOM with renormalized PE xsections
+
+:stop MC transport parameter:
+
+
+###############################################################################
+### Run control
+###############################################################################
+:start run control:
+    ncase = 2e6
+:stop run control:
